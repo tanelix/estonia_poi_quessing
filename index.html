@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="et">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Eesti Kaardimäng</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <!-- Main Menu -->
+      <div id="menu-screen" class="screen active">
+        <h1 class="candy-title">Eesti Kaardimäng</h1>
+        <div class="difficulty-buttons">
+          <div class="diff-container">
+            <button class="btn btn-easy" data-difficulty="easy">Lihtne</button>
+            <div class="diff-score">Parim: <span id="high-score-easy">0</span></div>
+          </div>
+          <div class="diff-container">
+            <button class="btn btn-medium" data-difficulty="medium">Keskmine</button>
+            <div class="diff-score">Parim: <span id="high-score-medium">0</span></div>
+          </div>
+          <div class="diff-container">
+            <button class="btn btn-hard" data-difficulty="hard">Raske</button>
+            <div class="diff-score">Parim: <span id="high-score-hard">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Screen -->
+      <div id="game-screen" class="screen">
+        <div class="game-header">
+          <button id="exit-game-btn" class="exit-btn" title="Välju menüüsse">&times;</button>
+          <div class="round-info">Voor: <span id="round-number">1</span>/10</div>
+          <div class="score-info">Punktid: <span id="current-score">0</span></div>
+        </div>
+        
+        <div class="map-container">
+          <img src="/estonia_map.webp" id="estonia-map" draggable="false" />
+          <div id="guess-marker" class="marker guess-marker hidden"></div>
+          <div id="actual-marker" class="marker actual-marker hidden"></div>
+          <svg id="connection-line" class="hidden">
+            <line id="line-element" x1="0" y1="0" x2="0" y2="0" stroke-dasharray="5,5" />
+          </svg>
+        </div>
+
+        <div id="poi-overlay" class="poi-overlay hidden">
+          <h2 id="poi-name">Tallinn</h2>
+        </div>
+
+        <div id="result-overlay" class="result-overlay hidden">
+          <h3 id="result-text">Kaugus: 10km!</h3>
+          <p id="result-points">+90 punkti</p>
+          <button id="next-btn" class="btn btn-primary">Edasi</button>
+        </div>
+      </div>
+
+      <!-- End Screen -->
+      <div id="end-screen" class="screen">
+        <h1 class="candy-title">Mäng Läbi!</h1>
+        <div class="final-score-box">
+          <p>Sinu punktid:</p>
+          <h2 id="final-score">0</h2>
+        </div>
+        <div class="end-buttons">
+          <button id="play-again-btn" class="btn btn-primary">Mängi Uuesti</button>
+          <button id="back-menu-btn" class="btn btn-secondary">Menüüsse</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
