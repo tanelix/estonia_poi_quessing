@@ -79,13 +79,67 @@ export function pixelToLatLng(x: number, y: number, containerWidth: number, cont
   return { lat, lng };
 }
 
+function distanceToSegment(lat: number, lng: number, lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const dLat = lat2 - lat1;
+  // Multiply dLng by cos(lat) approximation to fix longitude stretching distortion
+  const cosLat = Math.cos(deg2rad(lat1));
+  const dLng = (lng2 - lng1) * cosLat;
+  
+  const latDiff = lat - lat1;
+  const lngDiff = (lng - lng1) * cosLat;
+  
+  if (dLat === 0 && dLng === 0) return getDistance(lat, lng, lat1, lng1);
+  
+  const t = (latDiff * dLat + lngDiff * dLng) / (dLat * dLat + dLng * dLng);
+  
+  let nearestLat, nearestLng;
+  if (t < 0) {
+    nearestLat = lat1;
+    nearestLng = lng1;
+  } else if (t > 1) {
+    nearestLat = lat2;
+    nearestLng = lng2;
+  } else {
+    nearestLat = lat1 + t * dLat;
+    nearestLng = lng1 + t * (lng2 - lng1); // Un-scale for the actual lng coordinate
+  }
+  
+  return getDistance(lat, lng, nearestLat, nearestLng);
+}
+
 export function distanceToPath(lat: number, lng: number, path: [number, number][]): number {
   let minDistance = Infinity;
-  for (const point of path) {
-    const d = getDistance(lat, lng, point[0], point[1]);
-    if (d < minDistance) {
-      minDistance = d;
-    }
+  for (let i = 0; i < path.length - 1; i++) {
+    const p1 = path[i];
+    const p2 = path[i + 1];
+    const d = distanceToSegment(lat, lng, p1[0], p1[1], p2[0], p2[1]);
+    if (d < minDistance) minDistance = d;
+  }
+  return minDistance;
+}
+
+export function isPointInPolygon(lat: number, lng: number, polygon: [number, number][]): boolean {
+  let isInside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const pyi = polygon[i][0], pxi = polygon[i][1];
+    const pyj = polygon[j][0], pxj = polygon[j][1];
+    
+    const intersect = ((pyi > lat) !== (pyj > lat)) &&
+        (lng < (pxj - pxi) * (lat - pyi) / (pyj - pyi) + pxi);
+    if (intersect) isInside = !isInside;
+  }
+  return isInside;
+}
+
+export function distanceToPolygon(lat: number, lng: number, polygon: [number, number][]): number {
+  if (isPointInPolygon(lat, lng, polygon)) return 0;
+  
+  let minDistance = Infinity;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const p1 = polygon[j];
+    const p2 = polygon[i];
+    const d = distanceToSegment(lat, lng, p1[0], p1[1], p2[0], p2[1]);
+    if (d < minDistance) minDistance = d;
   }
   return minDistance;
 }

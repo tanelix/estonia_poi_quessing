@@ -175,11 +175,24 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
   padding: 1rem 2rem;
   z-index: 10;
+  pointer-events: none;
+}
+.game-header > * {
+  pointer-events: auto;
+}
+.game-header .exit-btn { justify-self: start; }
+.game-header .question-overlay { justify-self: center; }
+.game-header .stats-container {
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
 }
 
 .exit-btn {
@@ -222,7 +235,7 @@ body {
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  transition: transform 1.5s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 3s cubic-bezier(0.25, 1, 0.5, 1);
   transform-origin: center center;
 }
 
@@ -253,10 +266,10 @@ body {
   position: absolute;
   top: 50%; left: 50%;
   width: 12px;
-  height: 3px;
-  background-color: var(--secondary);
-  border-radius: 2px;
-  box-shadow: 0 0 0 1px white;
+  height: 1.5px;
+  background-color: var(--hard);
+  border-radius: 1px;
+  box-shadow: 0 0 0 0.5px white;
 }
 .guess-marker::before { transform: translate(-50%, -50%) rotate(45deg); }
 .guess-marker::after { transform: translate(-50%, -50%) rotate(-45deg); }
@@ -297,28 +310,36 @@ svg#connection-line {
   to { stroke-dashoffset: -100; }
 }
 
+.poi-contour {
+  fill: rgba(0, 188, 212, 0.4);
+  stroke: var(--secondary);
+  stroke-width: 0.75px;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 6;
+  animation: dash 20s linear infinite, pulseOpacity 2s infinite;
+}
+
+@keyframes pulseOpacity {
+  0%, 100% { fill: rgba(0, 188, 212, 0.2); }
+  50% { fill: rgba(0, 188, 212, 0.6); }
+}
+
 .poi-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 20;
+  justify-self: center;
+  background: var(--overlay-bg);
+  padding: 0.5rem 2rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  border: 2px solid white;
   pointer-events: none;
-  transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .poi-overlay h2 {
-  font-size: 5rem;
+  font-size: 1.5rem;
   font-weight: 900;
-  color: white;
-  text-shadow: 0 5px 0 var(--secondary-dark), 0 10px 20px rgba(0,0,0,0.3);
+  color: var(--text-color);
+  margin: 0;
   text-align: center;
-}
-
-.poi-overlay.corner {
-  top: 100px;
-  left: 50%;
-  transform: translate(-50%, 0) scale(0.5);
 }
 
 .result-overlay {

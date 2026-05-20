@@ -8,6 +8,7 @@ export interface POI {
   type: 'city' | 'water' | 'terrain' | 'river';
   difficulty: Difficulty;
   path?: [number, number][]; // For rivers: array of [lat, lng] points
+  polygon?: [number, number][]; // Fetched contour polygon
 }
 
 export const POIs: POI[] = [
@@ -59,6 +60,26 @@ export const POIs: POI[] = [
   { id: 'rouge_urgorg', name: 'Rõuge ürgorg', lat: 57.7333, lng: 26.9167, type: 'terrain', difficulty: 'hard' },
   { id: 'taevaskoda', name: 'Taevaskoda', lat: 58.1000, lng: 27.0500, type: 'terrain', difficulty: 'hard' }
 ];
+
+import polygonsData from './polygons.json';
+
+const nameMappings: Record<string, string> = {
+  'Soomaa': 'Soomaa rahvuspark',
+  'Endla raba': 'Endla looduskaitseala',
+  'Otepää kõrgendik': 'Otepää',
+  'Haanja kõrgendik': 'Haanja',
+  'Pandivere kõrgendik': 'Pandivere',
+  'Sakala kõrgendik': 'Sakala',
+  'Taevaskoda': 'Taevaskoja'
+};
+
+POIs.forEach(poi => {
+  const fetchName = nameMappings[poi.name] || poi.name;
+  const poly = (polygonsData as any)[fetchName];
+  if (poly && poly.length > 2) {
+    poi.polygon = poly;
+  }
+});
 
 export const TOLERANCES = {
   easy: 150, // km

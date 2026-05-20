@@ -32,27 +32,34 @@
       <div id="game-screen" class="screen">
         <div class="game-header">
           <button id="exit-game-btn" class="exit-btn" title="Välju menüüsse">&times;</button>
-          <div class="round-info">Voor: <span id="round-number">1</span>/10</div>
-          <div class="score-info">Punktid: <span id="current-score">0</span></div>
+          
+          <div id="poi-overlay" class="poi-overlay">
+            <h2 id="poi-name">Otsi: ...</h2>
+          </div>
+
+          <div class="stats-container">
+            <div class="score-info">Punktid: <span id="current-score">0</span></div>
+            <div class="round-info">Voor: <span id="round-number">1</span>/10</div>
+          </div>
         </div>
         
         <div class="map-container">
           <img src="/estonia_map.webp" id="estonia-map" draggable="false" />
           <div id="guess-marker" class="marker guess-marker hidden"></div>
           <div id="actual-marker" class="marker actual-marker hidden"></div>
+          <svg id="contour-svg" class="hidden" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:4; pointer-events:none;">
+            <polygon id="contour-polygon" class="poi-contour" />
+          </svg>
           <svg id="connection-line" class="hidden">
             <line id="line-element" x1="0" y1="0" x2="0" y2="0" stroke-dasharray="5,5" />
           </svg>
         </div>
 
-        <div id="poi-overlay" class="poi-overlay hidden">
-          <h2 id="poi-name">Tallinn</h2>
-        </div>
 
         <div id="result-overlay" class="result-overlay hidden">
-          <h3 id="result-text">Kaugus: 10km!</h3>
-          <p id="result-points">+90 punkti</p>
-          <button id="next-btn" class="btn btn-primary">Edasi</button>
+          <h2 id="result-text">Kaugus: 0 km</h2>
+          <div id="result-points" class="result-points">+0 punkti</div>
+          <button id="next-btn" class="btn">Edasi</button>
         </div>
       </div>
 

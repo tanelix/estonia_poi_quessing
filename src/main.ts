@@ -1,7 +1,7 @@
 import './style.css';
 import { POIs, TOLERANCES } from './data';
 import type { Difficulty, POI } from './data';
-import { getDistance, latLngToPixel, pixelToLatLng, distanceToPath } from './utils';
+import { getDistance, latLngToPixel, pixelToLatLng, distanceToPath, distanceToPolygon } from './utils';
 
 // --- UI Elements ---
 const screens = {
@@ -23,6 +23,8 @@ const mapImg = document.getElementById('estonia-map') as HTMLImageElement;
 const mapContainer = document.querySelector('.map-container') as HTMLElement;
 const guessMarker = document.getElementById('guess-marker')!;
 const actualMarker = document.getElementById('actual-marker')!;
+const contourSvg = document.getElementById('contour-svg')!;
+const contourPolygon = document.getElementById('contour-polygon')!;
 const connectionLine = document.getElementById('connection-line')!;
 const lineElement = document.getElementById('line-element')!;
 const poiOverlay = document.getElementById('poi-overlay')!;
@@ -153,17 +155,12 @@ function startRound() {
   
   // Reset UI
   poiOverlay.classList.remove('hidden');
-  poiOverlay.classList.remove('corner');
   resultOverlay.classList.add('hidden');
   guessMarker.classList.add('hidden');
   actualMarker.classList.add('hidden');
+  contourSvg.classList.add('hidden');
   connectionLine.classList.add('hidden');
   mapContainer.classList.remove('zoomed');
-  
-  // Animate POI text to corner after a short delay
-  setTimeout(() => {
-    poiOverlay.classList.add('corner');
-  }, 1500);
 }
 
 function handleMapClick(e: MouseEvent) {
@@ -184,7 +181,9 @@ function handleMapClick(e: MouseEvent) {
   
   // Calculate distance
   let distance = 0;
-  if (currentPOI.type === 'river' && currentPOI.path) {
+  if (currentPOI.polygon) {
+    distance = distanceToPolygon(guessLat, guessLng, currentPOI.polygon);
+  } else if (currentPOI.type === 'river' && currentPOI.path) {
     distance = distanceToPath(guessLat, guessLng, currentPOI.path);
   } else {
     distance = getDistance(guessLat, guessLng, currentPOI.lat, currentPOI.lng);
@@ -197,11 +196,21 @@ function handleMapClick(e: MouseEvent) {
     points = Math.round(tolerance - distance);
   }
   
-  // Show Actual Location
+  // Show Actual Location (Circle or Polygon)
   const actualPixel = latLngToPixel(currentPOI.lat, currentPOI.lng, rect.width, rect.height);
-  actualMarker.style.left = `${actualPixel.x}px`;
-  actualMarker.style.top = `${actualPixel.y}px`;
-  actualMarker.classList.remove('hidden');
+  
+  if (currentPOI.polygon) {
+    const pointsStr = currentPOI.polygon.map(p => {
+      const px = latLngToPixel(p[0], p[1], rect.width, rect.height);
+      return `${px.x},${px.y}`;
+    }).join(' ');
+    contourPolygon.setAttribute('points', pointsStr);
+    contourSvg.classList.remove('hidden');
+  } else {
+    actualMarker.style.left = `${actualPixel.x}px`;
+    actualMarker.style.top = `${actualPixel.y}px`;
+    actualMarker.classList.remove('hidden');
+  }
   
   // Draw Connection Line
   connectionLine.classList.remove('hidden');
@@ -216,26 +225,23 @@ function handleMapClick(e: MouseEvent) {
   mapContainer.style.transformOrigin = `${midX}px ${midY}px`;
   mapContainer.classList.add('zoomed');
   
-  // Show Results
-  setTimeout(() => {
-    animateScore(points);
-    resultText.textContent = `Kaugus: ${Math.round(distance)} km`;
-    resultPoints.textContent = `+${points} punkti`;
-    if (points === 0) {
-      resultPoints.style.color = 'var(--hard)';
-      resultText.textContent += ` (Liiga kaugel! Lubatud ${tolerance}km)`;
-    } else {
-      resultPoints.style.color = 'var(--easy)';
-    }
-    resultOverlay.classList.remove('hidden');
-  }, 500);
+  // Show Results immediately to sync with zoom
+  animateScore(points, 3000);
+  resultText.textContent = `Kaugus: ${Math.round(distance)} km`;
+  resultPoints.textContent = `+${points} punkti`;
+  if (points === 0) {
+    resultPoints.style.color = 'var(--hard)';
+    resultText.textContent += ` (Liiga kaugel! Lubatud ${tolerance}km)`;
+  } else {
+    resultPoints.style.color = 'var(--easy)';
+  }
+  resultOverlay.classList.remove('hidden');
 }
 
-function animateScore(pointsToAdd: number) {
+function animateScore(pointsToAdd: number, duration = 1000) {
   if (pointsToAdd === 0) return;
   const startScore = score;
   score += pointsToAdd;
-  const duration = 1000;
   const startTime = performance.now();
   
   function update(currentTime: number) {
