@@ -1,4 +1,4 @@
-mport { defineConfig } from 'vite'
+import { defineConfig } from 'vite'
 
 export default defineConfig({
   base: '/estonia_poi_quessing/',
