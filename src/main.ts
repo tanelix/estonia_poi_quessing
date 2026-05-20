@@ -25,6 +25,7 @@ const guessMarker = document.getElementById('guess-marker')!;
 const actualMarker = document.getElementById('actual-marker')!;
 const contourSvg = document.getElementById('contour-svg')!;
 const contourPolygon = document.getElementById('contour-polygon')!;
+const contourPolyline = document.getElementById('contour-polyline')!;
 const connectionLine = document.getElementById('connection-line')!;
 const lineElement = document.getElementById('line-element')!;
 const poiOverlay = document.getElementById('poi-overlay')!;
@@ -159,6 +160,8 @@ function startRound() {
   guessMarker.classList.add('hidden');
   actualMarker.classList.add('hidden');
   contourSvg.classList.add('hidden');
+  contourPolygon.classList.add('hidden');
+  contourPolyline.classList.add('hidden');
   connectionLine.classList.add('hidden');
   mapContainer.classList.remove('zoomed');
 }
@@ -196,16 +199,24 @@ function handleMapClick(e: MouseEvent) {
     points = Math.round(tolerance - distance);
   }
   
-  // Show Actual Location (Circle or Polygon)
+  // Show Actual Location (Circle, Polygon, or Polyline)
   const actualPixel = latLngToPixel(currentPOI.lat, currentPOI.lng, rect.width, rect.height);
   
-  if (currentPOI.polygon) {
-    const pointsStr = currentPOI.polygon.map(p => {
+  if (currentPOI.polygon || currentPOI.path) {
+    const shapeCoords = currentPOI.polygon || currentPOI.path;
+    const pointsStr = shapeCoords!.map(p => {
       const px = latLngToPixel(p[0], p[1], rect.width, rect.height);
       return `${px.x},${px.y}`;
     }).join(' ');
-    contourPolygon.setAttribute('points', pointsStr);
+    
     contourSvg.classList.remove('hidden');
+    if (currentPOI.polygon) {
+      contourPolygon.setAttribute('points', pointsStr);
+      contourPolygon.classList.remove('hidden');
+    } else {
+      contourPolyline.setAttribute('points', pointsStr);
+      contourPolyline.classList.remove('hidden');
+    }
   } else {
     actualMarker.style.left = `${actualPixel.x}px`;
     actualMarker.style.top = `${actualPixel.y}px`;

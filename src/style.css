@@ -319,6 +319,15 @@ svg#connection-line {
   animation: dash 20s linear infinite, pulseOpacity 2s infinite;
 }
 
+.poi-path {
+  fill: none;
+  stroke: var(--secondary);
+  stroke-width: 0.75px;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 6;
+  animation: dash 20s linear infinite;
+}
+
 @keyframes pulseOpacity {
   0%, 100% { fill: rgba(0, 188, 212, 0.2); }
   50% { fill: rgba(0, 188, 212, 0.6); }

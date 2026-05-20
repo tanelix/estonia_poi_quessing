@@ -10,7 +10,7 @@ const lonMin = 21.7;
 const lonMax = 28.3;
 
 // Zoom level
-const zoom = 8;
+const zoom = 9;
 
 function lon2tile(lon, zoom) {
   return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));

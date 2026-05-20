@@ -71,18 +71,27 @@ async function fetchPolygons() {
   // We want highly simplified shapes that look good but don't slow down the browser.
   const tolerance = 0.005;
 
+  const queryMap = {
+    'Peipsi järv': 'Lake Peipus',
+    'Matsalu laht': 'Matsalu rahvuspark',
+    'Rõuge ürgorg': 'Haanja looduspark',
+    'Soomaa rahvuspark': 'Soomaa rahvuspark',
+    'Suur Munamägi': 'Haanja looduspark' // Fallback to the surrounding park
+  };
+
   for (const name of POIs) {
     try {
-      console.log(`Fetching polygon for: ${name}`);
+      const q = queryMap[name] ? queryMap[name] : `${name}, Estonia`;
+      console.log(`Fetching polygon for: ${name} (Query: ${q})`);
       const res = await axios.get(`https://nominatim.openstreetmap.org/search.php`, {
         params: {
-          q: `${name}, Estonia`,
+          q: q,
           polygon_geojson: 1,
           format: 'json',
           limit: 1
         },
         headers: {
-          'User-Agent': 'EstoniaMapGame/1.0'
+          'User-Agent': 'EstoniaMapGame/1.1'
         }
       });
 
@@ -105,6 +114,14 @@ async function fetchPolygons() {
             coords = largest;
           } else if (type === 'LineString') {
             coords = item.geojson.coordinates;
+          } else if (type === 'MultiLineString') {
+            let largest = [];
+            for (const line of item.geojson.coordinates) {
+              if (line.length > largest.length) {
+                largest = line;
+              }
+            }
+            coords = largest;
           }
 
           if (coords.length > 0) {

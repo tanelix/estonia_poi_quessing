@@ -77,7 +77,11 @@ POIs.forEach(poi => {
   const fetchName = nameMappings[poi.name] || poi.name;
   const poly = (polygonsData as any)[fetchName];
   if (poly && poly.length > 2) {
-    poi.polygon = poly;
+    if (poi.type === 'river') {
+      poi.path = poly;
+    } else {
+      poi.polygon = poly;
+    }
   }
 });
 
