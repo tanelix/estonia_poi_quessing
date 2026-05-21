@@ -15,15 +15,15 @@
         <div class="difficulty-buttons">
           <div class="diff-container">
             <button class="btn btn-easy" data-difficulty="easy">Lihtne</button>
-            <div class="diff-score">Parim: <span id="high-score-easy">0</span></div>
+            <div class="diff-score">Parim: <span id="high-score-easy">0</span><span id="high-score-date-easy" class="score-date"></span></div>
           </div>
           <div class="diff-container">
             <button class="btn btn-medium" data-difficulty="medium">Keskmine</button>
-            <div class="diff-score">Parim: <span id="high-score-medium">0</span></div>
+            <div class="diff-score">Parim: <span id="high-score-medium">0</span><span id="high-score-date-medium" class="score-date"></span></div>
           </div>
           <div class="diff-container">
             <button class="btn btn-hard" data-difficulty="hard">Raske</button>
-            <div class="diff-score">Parim: <span id="high-score-hard">0</span></div>
+            <div class="diff-score">Parim: <span id="high-score-hard">0</span><span id="high-score-date-hard" class="score-date"></span></div>
           </div>
         </div>
       </div>
@@ -31,37 +31,43 @@
       <!-- Game Screen -->
       <div id="game-screen" class="screen">
         <div class="game-header">
-          <button id="exit-game-btn" class="exit-btn" title="Välju menüüsse">&times;</button>
-          
-          <div id="poi-overlay" class="poi-overlay">
-            <h2 id="poi-name">Otsi: ...</h2>
-          </div>
-
           <div class="stats-container">
             <div class="score-info">Punktid: <span id="current-score">0</span></div>
             <div class="round-info">Voor: <span id="round-number">1</span>/10</div>
           </div>
+          
         </div>
         
-        <div class="map-container">
-          <img src="/estonia_map.webp" id="estonia-map" draggable="false" />
-          <div id="guess-marker" class="marker guess-marker hidden"></div>
-          <div id="actual-marker" class="marker actual-marker hidden"></div>
-          <svg id="contour-svg" class="hidden" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:4; pointer-events:none;">
-            <polygon id="contour-polygon" class="poi-contour hidden" />
-            <polyline id="contour-polyline" class="poi-path hidden" />
-          </svg>
-          <svg id="connection-line" class="hidden">
-            <line id="line-element" x1="0" y1="0" x2="0" y2="0" stroke-dasharray="5,5" />
-          </svg>
+        <div id="poi-overlay" class="poi-overlay">
+          <h2 id="poi-name">Otsi: ...</h2>
+        </div>
+
+        <div class="zoom-controls">
+          <button id="zoom-in-btn" class="zoom-btn" title="Suurenda">+</button>
+          <button id="zoom-out-btn" class="zoom-btn" title="Vähenda">&minus;</button>
+        </div>
+        
+        <div class="map-wrapper">
+          <div class="map-container">
+            <img src="/estonia_map.webp" id="estonia-map" draggable="false" />
+            <div id="guess-marker" class="marker guess-marker hidden"></div>
+            <div id="actual-marker" class="marker actual-marker hidden"></div>
+            <svg id="contour-svg" class="hidden" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:4; pointer-events:none;">
+              <polygon id="contour-polygon" class="poi-contour hidden" />
+              <polyline id="contour-polyline" class="poi-path hidden" />
+            </svg>
+            <svg id="connection-line" class="hidden">
+              <line id="line-element" x1="0" y1="0" x2="0" y2="0" stroke-dasharray="5,5" />
+            </svg>
+          </div>
         </div>
 
 
         <div id="result-overlay" class="result-overlay hidden">
-          <h2 id="result-text">Kaugus: 0 km</h2>
-          <div id="result-points" class="result-points">+0 punkti</div>
           <button id="next-btn" class="btn btn-primary">Edasi</button>
         </div>
+        
+        <button id="exit-game-btn" class="exit-btn" title="Välju menüüsse">&times;</button>
       </div>
 
       <!-- End Screen -->

@@ -3,14 +3,14 @@ import path from 'path';
 import axios from 'axios';
 import sharp from 'sharp';
 
-// Estonia Bounding Box
-const latMin = 57.5;
-const latMax = 59.8;
-const lonMin = 21.7;
-const lonMax = 28.3;
+// Estonia Bounding Box (Expanded to add plenty of padding)
+const latMin = 55.5; // Latvia/Lithuania
+const latMax = 61.5; // Finland
+const lonMin = 19.5; // Baltic Sea
+const lonMax = 30.5; // Russia
 
-// Zoom level
-const zoom = 9;
+// Zoom level (increased for sharpness)
+const zoom = 10;
 
 function lon2tile(lon, zoom) {
   return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -69,20 +69,34 @@ async function downloadTile(x, y, z) {
 
 async function generateMap() {
   const composites = [];
+  const tasks = [];
   
   for (let x = xMin; x <= xMax; x++) {
     for (let y = yMinTile; y <= yMaxTile; y++) {
-      console.log(`Downloading tile ${x}, ${y}...`);
-      const buffer = await downloadTile(x, y, zoom);
-      composites.push({
-        input: buffer,
-        left: (x - xMin) * tileSize,
-        top: (y - yMinTile) * tileSize
-      });
+      tasks.push({x, y});
     }
   }
 
-  console.log('Stitching tiles together...');
+  console.log(`Starting download of ${tasks.length} tiles...`);
+  let completed = 0;
+  
+  // Concurrent download with concurrency limit of 10
+  const limit = 10;
+  for (let i = 0; i < tasks.length; i += limit) {
+    const batch = tasks.slice(i, i + limit);
+    const results = await Promise.all(batch.map(async (t) => {
+      const buffer = await downloadTile(t.x, t.y, zoom);
+      return {
+        input: buffer,
+        left: (t.x - xMin) * tileSize,
+        top: (t.y - yMinTile) * tileSize
+      };
+    }));
+    composites.push(...results);
+    completed += batch.length;
+    process.stdout.write(`\rDownloaded ${completed}/${tasks.length} tiles`);
+  }
+  console.log('\nStitching tiles together...');
   
   const baseImage = sharp({
     create: {

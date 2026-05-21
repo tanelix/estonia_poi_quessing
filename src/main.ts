@@ -11,9 +11,32 @@ const screens = {
 };
 
 // Menu Elements
-const highScoreEasyEl = document.getElementById('high-score-easy')!;
-const highScoreMediumEl = document.getElementById('high-score-medium')!;
-const highScoreHardEl = document.getElementById('high-score-hard')!;
+interface HighScore {
+  score: number;
+  date: string;
+}
+
+function loadHighScores(): Record<string, HighScore> {
+  const defaults = { score: 0, date: '' };
+  const getScore = (key: string) => {
+    const val = localStorage.getItem(key);
+    if (!val) return defaults;
+    try {
+      const parsed = JSON.parse(val);
+      if (typeof parsed === 'number') return { score: parsed, date: '' };
+      return parsed;
+    } catch {
+      return { score: parseInt(val) || 0, date: '' };
+    }
+  };
+  return {
+    easy: getScore('highscore-easy'),
+    medium: getScore('highscore-medium'),
+    hard: getScore('highscore-hard')
+  };
+}
+
+let highScores = loadHighScores();
 const difficultyBtns = document.querySelectorAll<HTMLButtonElement>('.difficulty-buttons .btn');
 
 // Game Elements
@@ -29,12 +52,30 @@ const contourPolyline = document.getElementById('contour-polyline')!;
 const connectionLine = document.getElementById('connection-line')!;
 const lineElement = document.getElementById('line-element')!;
 const poiOverlay = document.getElementById('poi-overlay')!;
-const poiNameEl = document.getElementById('poi-name')!;
+const poiName = document.getElementById('poi-name')!;
 const resultOverlay = document.getElementById('result-overlay')!;
-const resultText = document.getElementById('result-text')!;
-const resultPoints = document.getElementById('result-points')!;
 const nextBtn = document.getElementById('next-btn')!;
 const exitGameBtn = document.getElementById('exit-game-btn')!;
+
+// New Elements
+const zoomInBtn = document.getElementById('zoom-in-btn')!;
+const zoomOutBtn = document.getElementById('zoom-out-btn')!;
+const mapWrapper = document.querySelector('.map-wrapper') as HTMLElement;
+
+const DEFAULT_SCALE = 1.2;
+
+// State Variables
+let currentScale = DEFAULT_SCALE;
+let panX = 0;
+let panY = 0;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+
+// Helper to update transform
+function updateMapTransform() {
+  mapContainer.style.transform = `translate(${panX}px, ${panY}px) scale(${currentScale})`;
+}
 
 // End Elements
 const finalScoreEl = document.getElementById('final-score')!;
@@ -52,46 +93,30 @@ let hasGuessed = false;
 
 // --- Initialization ---
 function init() {
-  loadHighScore();
+  updateMenuHighScores();
   setupEventListeners();
   showScreen('menu');
 }
 
-function loadHighScore() {
-  const saved = localStorage.getItem('estoniaMapHighScoreV2');
-  if (saved) {
-    const scores = JSON.parse(saved);
-    if (scores.easy) highScoreEasyEl.textContent = `${scores.easy.score}`;
-    if (scores.medium) highScoreMediumEl.textContent = `${scores.medium.score}`;
-    if (scores.hard) highScoreHardEl.textContent = `${scores.hard.score}`;
-  }
+function updateMenuHighScores() {
+  document.getElementById('high-score-easy')!.textContent = `${highScores.easy.score}`;
+  document.getElementById('high-score-medium')!.textContent = `${highScores.medium.score}`;
+  document.getElementById('high-score-hard')!.textContent = `${highScores.hard.score}`;
 }
 
-function saveHighScore(newScore: number) {
-  const saved = localStorage.getItem('estoniaMapHighScoreV2');
-  let scores: any = { easy: { score: 0 }, medium: { score: 0 }, hard: { score: 0 } };
-  
-  if (saved) {
-    scores = JSON.parse(saved);
-  }
-  
-  if (!scores[currentDifficulty]) {
-    scores[currentDifficulty] = { score: 0 };
-  }
-  
-  if (newScore > scores[currentDifficulty].score) {
-    const today = new Date();
-    const dateStr = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getFullYear()).slice(2)}`;
-    scores[currentDifficulty] = { score: newScore, date: dateStr };
-    localStorage.setItem('estoniaMapHighScoreV2', JSON.stringify(scores));
-    loadHighScore();
+function saveHighScore() {
+  if (score > highScores[currentDifficulty].score) {
+    const dateStr = new Date().toLocaleDateString('et-EE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    highScores[currentDifficulty] = { score, date: dateStr };
+    localStorage.setItem(`highscore-${currentDifficulty}`, JSON.stringify(highScores[currentDifficulty]));
+    updateMenuHighScores();
   }
 }
 
 function setupEventListeners() {
   difficultyBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const target = e.target as HTMLButtonElement;
+      const target = e.currentTarget as HTMLButtonElement;
       startGame(target.dataset.difficulty as Difficulty);
     });
   });
@@ -101,7 +126,6 @@ function setupEventListeners() {
   nextBtn.addEventListener('click', nextRound);
 
   exitGameBtn.addEventListener('click', () => {
-    // Return to menu without saving an incomplete game's score
     showScreen('menu');
   });
 
@@ -111,6 +135,38 @@ function setupEventListeners() {
 
   backMenuBtn.addEventListener('click', () => {
     showScreen('menu');
+  });
+
+  // Zoom Controls
+  zoomInBtn.addEventListener('click', () => {
+    currentScale = Math.min(currentScale + 0.5, 4);
+    updateMapTransform();
+  });
+
+  zoomOutBtn.addEventListener('click', () => {
+    currentScale = Math.max(currentScale - 0.5, DEFAULT_SCALE);
+    updateMapTransform();
+  });
+
+  // Drag to pan
+  mapWrapper.addEventListener('mousedown', (e) => {
+    if (e.target !== mapImg) return;
+    isDragging = true;
+    startX = e.clientX - panX;
+    startY = e.clientY - panY;
+    mapWrapper.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    panX = e.clientX - startX;
+    panY = e.clientY - startY;
+    updateMapTransform();
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+    mapWrapper.style.cursor = 'default';
   });
 }
 
@@ -126,7 +182,6 @@ function startGame(difficulty: Difficulty) {
   score = 0;
   hasGuessed = false;
   
-  // Filter POIs: Medium includes easy, Hard includes easy+medium
   remainingPOIs = [...POIs];
   if (difficulty === 'easy') {
     remainingPOIs = remainingPOIs.filter(p => p.difficulty === 'easy');
@@ -134,7 +189,6 @@ function startGame(difficulty: Difficulty) {
     remainingPOIs = remainingPOIs.filter(p => p.difficulty === 'easy' || p.difficulty === 'medium');
   }
   
-  // Shuffle
   remainingPOIs.sort(() => Math.random() - 0.5);
   
   updateScoreUI();
@@ -152,7 +206,7 @@ function startRound() {
   currentPOI = remainingPOIs.pop()!;
   
   roundNumberEl.textContent = currentRound.toString();
-  poiNameEl.textContent = currentPOI.name;
+  poiName.textContent = currentPOI.name;
   
   // Reset UI
   poiOverlay.classList.remove('hidden');
@@ -163,26 +217,32 @@ function startRound() {
   contourPolygon.classList.add('hidden');
   contourPolyline.classList.add('hidden');
   connectionLine.classList.add('hidden');
-  mapContainer.classList.remove('zoomed');
+  
+  // Reset pan and zoom to default
+  currentScale = DEFAULT_SCALE;
+  panX = 0;
+  panY = -(mapWrapper.clientHeight * 0.1); // Move centerpoint up 10%
+  updateMapTransform();
 }
 
 function handleMapClick(e: MouseEvent) {
   if (hasGuessed || !currentPOI) return;
+  if (isDragging && (Math.abs(e.clientX - panX - startX) > 5 || Math.abs(e.clientY - panY - startY) > 5)) return; // Ignore click if dragging
   hasGuessed = true;
   
-  // Convert click to LatLng (using mapContainer dimensions)
   const rect = mapContainer.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
-  const clickY = e.clientY - rect.top;
+  const unscaledW = mapContainer.offsetWidth;
+  const unscaledH = mapContainer.offsetHeight;
   
-  // Place Guess Marker
+  const clickX = (e.clientX - rect.left) / currentScale;
+  const clickY = (e.clientY - rect.top) / currentScale;
+  
   guessMarker.style.left = `${clickX}px`;
   guessMarker.style.top = `${clickY}px`;
   guessMarker.classList.remove('hidden');
   
-  const { lat: guessLat, lng: guessLng } = pixelToLatLng(clickX, clickY, rect.width, rect.height);
+  const { lat: guessLat, lng: guessLng } = pixelToLatLng(clickX, clickY, unscaledW, unscaledH);
   
-  // Calculate distance
   let distance = 0;
   if (currentPOI.polygon) {
     distance = distanceToPolygon(guessLat, guessLng, currentPOI.polygon);
@@ -192,20 +252,18 @@ function handleMapClick(e: MouseEvent) {
     distance = getDistance(guessLat, guessLng, currentPOI.lat, currentPOI.lng);
   }
   
-  // Score calculation
   const tolerance = TOLERANCES[currentDifficulty];
   let points = 0;
   if (distance <= tolerance) {
     points = Math.round(tolerance - distance);
   }
   
-  // Show Actual Location (Circle, Polygon, or Polyline)
-  const actualPixel = latLngToPixel(currentPOI.lat, currentPOI.lng, rect.width, rect.height);
+  const actualPixel = latLngToPixel(currentPOI.lat, currentPOI.lng, unscaledW, unscaledH);
   
   if (currentPOI.polygon || currentPOI.path) {
     const shapeCoords = currentPOI.polygon || currentPOI.path;
     const pointsStr = shapeCoords!.map(p => {
-      const px = latLngToPixel(p[0], p[1], rect.width, rect.height);
+      const px = latLngToPixel(p[0], p[1], unscaledW, unscaledH);
       return `${px.x},${px.y}`;
     }).join(' ');
     
@@ -223,34 +281,27 @@ function handleMapClick(e: MouseEvent) {
     actualMarker.classList.remove('hidden');
   }
   
-  // Draw Connection Line
   connectionLine.classList.remove('hidden');
   lineElement.setAttribute('x1', `${clickX}`);
   lineElement.setAttribute('y1', `${clickY}`);
   lineElement.setAttribute('x2', `${actualPixel.x}`);
   lineElement.setAttribute('y2', `${actualPixel.y}`);
   
-  // Zoom to the area
-  const midX = (clickX + actualPixel.x) / 2;
-  const midY = (clickY + actualPixel.y) / 2;
-  mapContainer.style.transformOrigin = `${midX}px ${midY}px`;
-  mapContainer.classList.add('zoomed');
+  // Auto-zoom to the actual location
+  currentScale = 2.5;
+  panX = (unscaledW / 2 - actualPixel.x) * currentScale;
+  panY = (unscaledH / 2 - actualPixel.y) * currentScale;
+  updateMapTransform();
   
-  // Show Results immediately to sync with zoom
-  animateScore(points, 3000);
-  resultText.textContent = `Kaugus: ${Math.round(distance)} km`;
-  resultPoints.textContent = `+${points} punkti`;
-  if (points === 0) {
-    resultPoints.style.color = 'var(--hard)';
-    resultText.textContent += ` (Liiga kaugel! Lubatud ${tolerance}km)`;
-  } else {
-    resultPoints.style.color = 'var(--easy)';
-  }
+  animateScore(points, 2000);
+  
   resultOverlay.classList.remove('hidden');
 }
 
 function animateScore(pointsToAdd: number, duration = 1000) {
-  if (pointsToAdd === 0) return;
+  if (pointsToAdd === 0) {
+    return;
+  }
   const startScore = score;
   score += pointsToAdd;
   const startTime = performance.now();
@@ -259,18 +310,18 @@ function animateScore(pointsToAdd: number, duration = 1000) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
     
-    // Easing out cubic
-    const easeOut = 1 - Math.pow(1 - progress, 3);
-    const currentDisplayScore = Math.floor(startScore + pointsToAdd * easeOut);
-    currentScoreEl.textContent = currentDisplayScore.toString();
-    
-    // Pulse effect
-    currentScoreEl.style.transform = `scale(${1 + Math.sin(progress * Math.PI) * 0.3})`;
+    const currentPointsToAdd = Math.floor(pointsToAdd * progress);
+    currentScoreEl.textContent = (startScore + currentPointsToAdd).toString();
+    currentScoreEl.style.color = progress < 1 ? 'var(--primary)' : 'inherit';
+    currentScoreEl.style.transform = progress < 1 ? 'scale(1.2)' : 'scale(1)';
+    currentScoreEl.style.display = 'inline-block';
+    currentScoreEl.style.transition = 'transform 0.1s ease';
     
     if (progress < 1) {
       requestAnimationFrame(update);
     } else {
       currentScoreEl.style.transform = 'scale(1)';
+      currentScoreEl.style.color = 'inherit';
     }
   }
   
@@ -289,7 +340,7 @@ function nextRound() {
 
 function endGame() {
   finalScoreEl.textContent = score.toString();
-  saveHighScore(score);
+  saveHighScore();
   showScreen('end');
 }
 
