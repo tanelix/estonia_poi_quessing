@@ -219,9 +219,14 @@ function startRound() {
   connectionLine.classList.add('hidden');
   
   // Reset pan and zoom to default
-  currentScale = DEFAULT_SCALE;
+  if (window.innerWidth > window.innerHeight) {
+    currentScale = 1.4;
+    panY = mapWrapper.clientHeight * 0.1; // Move view north (translate map down)
+  } else {
+    currentScale = DEFAULT_SCALE;
+    panY = -(mapWrapper.clientHeight * 0.1); // Move centerpoint up 10%
+  }
   panX = 0;
-  panY = -(mapWrapper.clientHeight * 0.1); // Move centerpoint up 10%
   updateMapTransform();
 }
 
