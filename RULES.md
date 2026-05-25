@@ -30,3 +30,4 @@
   - Hard: 50 km tolerance
 - **Targets (POIs)**: Can be Points (cities), Lines (rivers), or Polygons (terrain, lakes).
 - **High Scores**: Saved in localStorage per difficulty.
+
